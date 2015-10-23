@@ -2,15 +2,14 @@
 #include <RH_ASK.h>
 #include <SPI.h>
 
-#define SERVER_ADDRESS 1
+#define COLECTOR_ADDRESS 0
 
-int clients[64];
+int devices[254]; //256 - colector - broadcast = 254
+uint8_t from;
+uint8_t len;
 
-// Singleton instance of the radio driver
 RH_ASK driver;
-
-// Class to manage message delivery and receipt, using the driver declared above
-RHReliableDatagram manager(driver, SERVER_ADDRESS);
+RHReliableDatagram manager(driver, COLECTOR_ADDRESS);
 
 void setup() 
 {
@@ -20,25 +19,36 @@ void setup()
   	}
 }
 
-uint8_t data[];
+//Important: Dont put this on the stack
 uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
+uint8_t data[] = "1";
 
 void loop()
 {
-  if (manager.available())
-  {
-    // Wait for a message addressed to us from the client
-    uint8_t len = sizeof(buf);
-    uint8_t from;
-    if (manager.recvfromAck(buf, &len, &from))
-    {
-      Serial.print("got request from : 0x");
-      Serial.print(from, HEX);
-      Serial.print(": ");
-      Serial.println((char*)buf);
-      // Send a reply back to the originator client
-      if (!manager.sendtoWait(data, sizeof(data), from))
-        Serial.println("sendtoWait failed");
-    }
-  }
+    Serial.print("SENDING REQUEST TO ");
+    Serial.println(); //Colocar o endereço do end device
+
+  	// Send a message to manager_server
+  	if (manager.sendtoWait(data, sizeof(data), COLECTOR_ADDRESS))
+  	{
+    	//from receives 0 to clear old value. 0 is the same address of server. 
+    	//It can be used do find errors
+    	from	= 0;   
+    	len		= sizeof(buf);   
+    
+    	if (manager.recvfromAckTimeout(buf, len, 5000, &from))
+    	{
+      		Serial.println(from);
+    	}
+    	else
+    	{
+    	  Serial.println("NO REPLY. IS THE DEVICE RUNNING?");
+    	}
+  	}
+  	else
+  	{
+    	Serial.println("SEND FAILED");
+  	}
+  	
+  delay(500);
 }
