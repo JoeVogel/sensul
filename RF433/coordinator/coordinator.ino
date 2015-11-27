@@ -6,16 +6,14 @@
 #define COORDINATOR_ADDRESS 0
 //AVAILABLE_ADDRESSES = 256 (0 - 255) - colector (0) - broadcast (255) - endereço de sincronismo (254) = 253
 #define AVAILABLE_ADDRESSES 253
-
-unsigned long delay_time = 300000;
+#define SYCHRONISM_ADDRESS 254
 
 uint8_t colectorsAddresses[253];
 uint8_t currentColector = 1;
 
-int commandButton = 11; //switch 0
+int joinButton = 11; //switch 0
 
-uint8_t from;
-uint8_t len;
+String dataToSend;
 
 RH_ASK driver;
 RHReliableDatagram manager(driver, COORDINATOR_ADDRESS);
@@ -24,7 +22,7 @@ void setup()
 {
   	Serial.begin(9600);
 
-  	pinMode(commandButton, INPUT);
+  	pinMode(joinButton, INPUT);
 
   	getNodesFromEEPROM();
 
@@ -35,56 +33,66 @@ void setup()
 
 //Important: Dont put this on the stack
 uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
-uint8_t data[] = "RR"; //RR = Read Request
 
 void loop()
 {
 	checkButtons();
 	checkSerial();
-
-	if (colectorsAddresses[currentColector])
-		requestToColector();
-  	
-	if (currentColector == AVAILABLE_ADDRESSES)
-		currentColector = 1;
-	else
-		currentColector++;
-
-	delay(delay_time);
 }
 
 void checkButtons()
 {
-	if (digitalRead(commandButton))
+	if (digitalRead(joinButton))
 	{
-		//Ver com João como faremos. Propor tela de diálogo no rasp solicitando o que o técnico pretende fazer
-		
-		/*
-		Opções tela:
-		
-		-> Adicionar coletor;
-		-> Remover coletor.
+		uint8_t len = sizeof(buf);
+  		uint8_t from;
+	
+  		if (manager.recvfromAck(buf, &len, &from))
+  		{
 
-		*/
+    		Serial.print("RECEIVED A REQUEST FROM ");
+    		Serial.println(from);
+  			//Verifica se a mensagem veio do coordenador
+  			if (from == SYCHRONISM_ADDRESS)
+  			{
+  				uint8_t newAddress = (uint8_t)addNodeToNetwork();
+    	      	// Send a reply back 
+    	 		if (!manager.sendtoWait(newAddress, sizeof(newAddress), from))
+		 	   		Serial.println("SEND RESPONSE FAILED");	
+    	 		}
+  			}
+		}	
 	}
 }
 
 void checkSerial()
 {
-	//Ver com João se ele deseja mandar comandos via raspberry (Serial)
+	String request;
+
+	while(Serial.available())
+   	{
+    	request += String(Serial.read());
+    }
+
+    //Adicionar tratativa da mensagem recebida
+
+	if (colectorsAddresses[currentColector])
+		requestToColector();
+	else
+		Serial.println("INVALID ADDRESS");
+	
 }
 
-void requestToColector()
+void requestToColector(uint8_t data[])
 {
 	uint8_t colector = colectorsAddresses[currentColector];
 
   	// Send a message to the colector
   	if (manager.sendtoWait(data, sizeof(data), colector))
   	{
-    	//from receives 0 to clear old value. 0 is the same address of server. 
-    	//It can be used do find errors
-    	from	= 0;   
-    	len		= sizeof(buf);   
+    	// Now wait for a reply from the server
+   		uint8_t len = sizeof(buf);
+   		uint8_t from;   
     
     	if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
     	{
@@ -114,6 +122,11 @@ int addNodeToNetwork()
 			EEPROM.write(i, 1);	
 			address = i;
 			break;
+		}
+
+		if (i == AVAILABLE_ADDRESSES && address == 0)
+		{
+			Serial.println("CAN'T ASSOCIATE MORE NODES");
 		}
 	}
 
