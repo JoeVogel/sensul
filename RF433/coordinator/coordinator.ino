@@ -1,6 +1,6 @@
 #include <EEPROM.h>
-#include "RHReliableDatagram.h"
-#include "RH_ASK.h"
+#include <RHReliableDatagram.h>
+#include <RH_ASK.h>
 #include <SPI.h>
 
 #define COORDINATOR_ADDRESS 0
@@ -52,10 +52,10 @@ void checkButtons()
 
     		Serial.print("RECEIVED A REQUEST FROM ");
     		Serial.println(from);
-  			//Verifica se a mensagem veio do coordenador
+  			//Check if the message came from the synchronizer address
   			if (from == SYCHRONISM_ADDRESS)
   			{
-  				uint8_t newAddress = (uint8_t)addNodeToNetwork();
+  				uint8_t* newAddress = (uint8_t*)addNodeToNetwork();
     	      	// Send a reply back 
     	 		if (!manager.sendtoWait(newAddress, sizeof(newAddress), from))
 		 	   		Serial.println("SEND RESPONSE FAILED");	
@@ -63,50 +63,59 @@ void checkButtons()
   			}
 		}	
 	}
-}
+
 
 void checkSerial()
 {
-	String request;
+	char readChar;
+	String serialData;
+	int colectorAddress;
 
 	while(Serial.available())
-   	{
-    	request += String(Serial.read());
-    }
+	{
+		readChar = Serial.read();
+		serialData += readChar;
+	}
 
-    //Adicionar tratativa da mensagem recebida
-
-	if (colectorsAddresses[currentColector])
-		requestToColector();
-	else
-		Serial.println("INVALID ADDRESS");
+	if (serialData.equals(""))
+	{
+		colectorAddress = serialData.substring(0, serialData.indexOf(';')).toInt();
+		uint8_t buffer[40];
+		serialData.getBytes(buffer, 40);
+		requestToColector(buffer, colectorAddress);
+	}
 	
 }
 
-void requestToColector(uint8_t data[])
+void requestToColector(uint8_t data[], uint8_t colectorAddress)
 {
-	uint8_t colector = colectorsAddresses[currentColector];
-
-  	// Send a message to the colector
-  	if (manager.sendtoWait(data, sizeof(data), colector))
-  	{
-    	// Now wait for a reply from the server
-   		uint8_t len = sizeof(buf);
-   		uint8_t from;   
+	if (colectorsAddresses[colectorAddress])
+	{
+		// Send a message to the colector
+  		if (manager.sendtoWait(data, sizeof(data), colectorAddress))
+  		{
+    		// Now wait for a reply from the server
+   			uint8_t len = sizeof(buf);
+   			uint8_t from;   
     
-    	if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
-    	{
-      		Serial.println((char*)buf);
-    	}
-    	else
-    	{
-    		Serial.println("NO REPLY. IS THE DEVICE RUNNING?");
-    	}
-  	}
-  	else
-  	{
-    	Serial.println("SEND FAILED");
-  	}
+    		if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
+    		{
+      			Serial.println((char*)buf);
+    		}
+    		else
+    		{
+    			Serial.println("NO REPLY. IS THE DEVICE RUNNING?");
+    		}
+  		}
+  		else
+  		{
+    		Serial.println("SEND FAILED");
+  		}
+	}
+	else
+	{
+		Serial.println("INVALID ADDRESS.");
+	}
 }
 
 int addNodeToNetwork()

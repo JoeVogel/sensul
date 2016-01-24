@@ -1,5 +1,5 @@
-#include "RHReliableDatagram.h"
-#include "RH_ASK.h"
+#include <RHReliableDatagram.h>
+#include <RH_ASK.h>
 #include <SPI.h>
 #include <EEPROM.h>
 
@@ -70,14 +70,14 @@ void checkButtons()
     }
     else
     {
-      Serial.println("THIS DEVICE IS CURRENTLY IN A NETWORK.")
+      Serial.println("THIS DEVICE IS CURRENTLY IN A NETWORK.");
     }
 	}
 }
 
 void networkJoin()
 {
-	uint8_t data[] = "J;SDTH22H;SDTH22T;SDTH22H;SDTH22T;SDTH22H;SDTH22T;"; //Validar com João
+	uint8_t data[] = "J;SDTH22H;SDTH22T;SDTH22H;SDTH22T;SDTH22H;SDTH22T;"; 
 
   Serial.println("SENDING JOIN PACKET");
 	if (manager.sendtoWait(data, sizeof(data), COORDINATOR_ADDRESS))
@@ -88,11 +88,12 @@ void networkJoin()
     
    	if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
     {
-      manager.setThisAddress(buf);//Converter uint8_t* para uint8_t
-      EEPROM.write(EEPROM_ADDRESS, buf); //Verificar comportamento
+      int newAddress = (int)buf; //Necessário pois buf é uint8_t*. 
+      manager.setThisAddress(newAddress);
+      EEPROM.write(EEPROM_ADDRESS, newAddress); //Verificar comportamento
       joined = true;
       Serial.print("JOINED. CURENTLY ADDRESS IS ");
-      Serial.println(buf);
+      Serial.println(newAddress);
     }
     else
       Serial.println("NO REPLY. IS THE DEVICE RUNNING?"); 
