@@ -4,13 +4,13 @@
 #define ssid "jaraguatec"
 #define passwd "89vcj13jkd39dsmg3"
 
-#define mqtt_server "10.0.109.177"
+/*#define mqtt_server "10.0.109.177"
 #define mqtt_user ""
-#define mqtt_password ""
+#define mqtt_password ""*/
 
-/*#define mqtt_server "m12.cloudmqtt.com"
+#define mqtt_server "m12.cloudmqtt.com"
 #define mqtt_user "vwdwpedt"
-#define mqtt_password "8E-bfl64oLIj"*/
+#define mqtt_password "8E-bfl64oLIj"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -22,8 +22,8 @@ void setup()
   Serial.begin(115200);
   
   wifiConnect();
-  client.setServer(mqtt_server, 1883);
-  //client.setServer(mqtt_server, 13679);
+  //client.setServer(mqtt_server, 1883);
+  client.setServer(mqtt_server, 13679);
 }
 
 void loop()
