@@ -1,29 +1,41 @@
 #include "PubSubClient.h"
+#include "DHT.h"
 #include <ESP8266WiFi.h>
 
-#define ssid "jaraguatec"
-#define passwd "89vcj13jkd39dsmg3"
+#define DHTPIN 2
+#define DHTTYPE DHT22
+
+#define ssid "VOGEL_NETWORK"
+#define passwd "labradora"
 
 /*#define mqtt_server "10.0.109.177"
 #define mqtt_user ""
 #define mqtt_password ""*/
 
-#define mqtt_server "m12.cloudmqtt.com"
+/*#define mqtt_server "m12.cloudmqtt.com"
 #define mqtt_user "vwdwpedt"
-#define mqtt_password "8E-bfl64oLIj"
+#define mqtt_password "8E-bfl64oLIj"*/
+
+#define mqtt_server "104.31.79.107"
+#define mqtt_user ""
+#define mqtt_password ""
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-int msg = 1;
+DHT dht(DHTPIN, DHTTYPE);
+
+String payload; 
 
 void setup()
 {
   Serial.begin(115200);
   
   wifiConnect();
-  //client.setServer(mqtt_server, 1883);
-  client.setServer(mqtt_server, 13679);
+  client.setServer(mqtt_server, 1883);
+  //client.setServer(mqtt_server, 13679);
+
+  dht.begin();
 }
 
 void loop()
@@ -35,10 +47,17 @@ void loop()
   if (!client.connected()) {
     reconnect();
   }
+  
+  //“{ ‘temperature’: 22.5, ‘humidity’: 31 }"
+  payload = "'{ 'temperature': ";
+  payload += dht.readTemperature(); 
+  payload += ", 'humidity': ";
+  payload += dht.readHumidity();
+  payload += " }'";
+  
+  client.publish("/sensul-sensors", payload.c_str(), true);
 
   
-  client.publish("/sensor", String(msg).c_str(), true);
-  msg = msg + 1;
 }
 
 void wifiConnect()
@@ -65,8 +84,8 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("ATTEMPTING MQTT CONNECTION...");
 
-    if (client.connect("Client01", mqtt_user, mqtt_password)) {
-    //if (client.connect("Client01")) {
+    //if (client.connect("Client01", mqtt_user, mqtt_password)) {
+    if (client.connect("Client01")) {
       Serial.println("CONNECTED.");
     } else {
       Serial.print("FAILED, RC= ");
@@ -76,3 +95,5 @@ void reconnect() {
     }
   }
 }
+
+
