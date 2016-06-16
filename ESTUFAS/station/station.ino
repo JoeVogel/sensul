@@ -29,10 +29,8 @@ void setup()
   Serial.begin(115200);
   
   //Busca e tratamento do MAC para uso na identificação do payload
-  WiFi.macAddress(mac);
   mac = WiFi.macAddress();
-
-  wifiConnect();
+  
   client.setServer(mqtt_server, 1883);
 
   dht1.begin();
@@ -42,16 +40,13 @@ void setup()
 
 void loop()
 {
-  //ESP.deepSleep(60000, WAKE_RF_DEFAULT);
+  wifiConnect();
 
-//Delay para testes sem SLEEP	
-  delay(300000);
-
-  if (!client.connected()) {
-    reconnect();
-  }
+  mqttConnect();
   
   client.publish("/sensors", fillPayload().c_str(), true);
+
+  ESP.deepSleep(60000, WAKE_RF_DEFAULT);
 }
 
 /*
@@ -83,26 +78,39 @@ void wifiConnect()
 } 
 
 /*
-	void reconnect() 
+	void mqttConnect() 
 
-	Verifica se o a conexão MQTT ainda existe, caso tenha perdido a conexão, tenta conectar novamente
+	Realiza a conexão com o broker mqtt, se em 10 tentativas não funcionar, aborta tentativa. (acender um LED???)
 */
-void reconnect() 
+boolean mqttConnect() 
 {
-  
-  while (!client.connected()) {
-    Serial.print("ATTEMPTING MQTT CONNECTION...");
 
-    //if (client.connect("Client01", mqtt_user, mqtt_password)) {
-    if (client.connect("ESPClient - " + mac)) {
-      Serial.println("CONNECTED.");
-    } else {
-      Serial.print("FAILED, RC= ");
-      Serial.print(client.state());
-      Serial.println(" TRY AGAIN IN 5 SECONDS.");
-      delay(5000);
+  boolean connected = false;
+
+  for (int i = 0; i < 10; i++)
+  {
+    if (!client.connected())
+    {
+      Serial.print("ATTEMPTING MQTT CONNECTION...");
+
+      //if (client.connect(mac.c_str(), mqtt_user, mqtt_password)) {
+      if (client.connect(mac.c_str())) {
+        Serial.println("CONNECTED.");
+        connected = true;
+        break;
+      }
+      else 
+      {
+        Serial.print("FAILED, RC= ");
+        Serial.print(client.state());
+        Serial.println(" TRY AGAIN IN 5 SECONDS.");
+        delay(5000);
+      }
     }
   }
+
+return connected;
+
 }
 
 /*
