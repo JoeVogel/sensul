@@ -3,6 +3,8 @@
 #include <ESP8266WiFi.h>
 
 #define DHTPIN1 5
+#define DHTPIN2 5
+#define DHTPIN3 5
 #define DHTTYPE DHT22
 
 #define ssid "VOGEL_NETWORK"
@@ -16,23 +18,26 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 DHT dht1(DHTPIN1, DHTTYPE);
+DHT dht2(DHTPIN1, DHTTYPE);
+DHT dht3(DHTPIN1, DHTTYPE);
 
 String payload; 
-String ESPMac = "";
-unsigned char mac[6];
+String mac;
 
 void setup()
 {
   Serial.begin(115200);
   
-  //Descoberta do MAC para uso na identificação do payload
+  //Busca e tratamento do MAC para uso na identificação do payload
   WiFi.macAddress(mac);
-  ESPMac += macToStr(mac);
+  mac = WiFi.macAddress();
 
   wifiConnect();
   client.setServer(mqtt_server, 1883);
 
   dht1.begin();
+  dht2.begin();
+  dht3.begin();
 }
 
 void loop()
@@ -108,43 +113,39 @@ void reconnect()
 */
 String fillPayload()
 {
-  payload = "{\"sensors\":[";
+  payload = "{\"mac\":";
+  payload += mac;
+  payload += " :[";
 
+  //início sensor 1
   payload += "{\"temperature\":";
   payload += dht1.readTemperature(); 
   payload += ", ";
   payload += "\"humidity\":";
   payload += dht1.readHumidity();
-  payload += "}";
+  payload += "},";
+  //final sensor 1
+
+  //início sensor 2
+  payload += "{\"temperature\":";
+  payload += dht2.readTemperature(); 
+  payload += ", ";
+  payload += "\"humidity\":";
+  payload += dht2.readHumidity();
+  payload += "},";
+  //final sensor 2
+
+  //início sensor 3
+  payload += "{\"temperature\":";
+  payload += dht3.readTemperature(); 
+  payload += ", ";
+  payload += "\"humidity\":";
+  payload += dht3.readHumidity();
+  payload += "}"; //Sem "," no final, pois é o último elemento
+  //final sensor 3
 
   payload += "]}";
 
   return payload;
-
-}
-
-/*
-	String macToStr(const uint8_t* mac)
-
-	Função responsável por extrair o MAC do array e transformar em uma String
-
-	@const uint8_t* mac : este parâmetro recebe o array contendo o MAC que se deseja transformar em String
-*/
-String macToStr(const uint8_t* mac)
-{
-	String result;
-
-	for (int i = 0; i < 6; ++i) {
-
-		result += String(mac[i], 16);
-
-		if (i < 5)
-		{
-			result += ':';
-		}
-
-	}
-
-	return result;
 
 }
