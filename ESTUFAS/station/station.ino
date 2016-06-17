@@ -3,9 +3,10 @@
 #include <ESP8266WiFi.h>
 
 #define DHTPIN1 5
-#define DHTPIN2 5
-#define DHTPIN3 5
-#define DHTTYPE DHT22
+#define DHTPIN2 4
+#define DHTPIN3 0
+#define DHT11TYPE DHT11
+#define DHT22TYPE DHT22
 
 #define ssid "VOGEL_NETWORK"
 #define passwd "labradora"
@@ -17,9 +18,9 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-DHT dht1(DHTPIN1, DHTTYPE);
-DHT dht2(DHTPIN1, DHTTYPE);
-DHT dht3(DHTPIN1, DHTTYPE);
+DHT dht1(DHTPIN1, DHT22TYPE);
+DHT dht2(DHTPIN2, DHT22TYPE);
+DHT dht3(DHTPIN3, DHT11TYPE);
 
 String payload; 
 String mac;
@@ -44,9 +45,16 @@ void loop()
 
   mqttConnect();
   
-  client.publish("/sensors", fillPayload().c_str(), true);
+  if (client.publish("/sensor", fillPayload().c_str(), true))
+  {
+    Serial.println("SENDED.");
+  }
+  else
+  {
+    Serial.println("NOT SENDED.");
+  }
 
-  ESP.deepSleep(60000, WAKE_RF_DEFAULT);
+  ESP.deepSleep(30000000, WAKE_RF_DEFAULT);
 }
 
 /*
@@ -94,7 +102,8 @@ boolean mqttConnect()
       Serial.print("ATTEMPTING MQTT CONNECTION...");
 
       //if (client.connect(mac.c_str(), mqtt_user, mqtt_password)) {
-      if (client.connect(mac.c_str())) {
+      if (client.connect(mac.c_str()))
+      {
         Serial.println("CONNECTED.");
         connected = true;
         break;
@@ -121,38 +130,39 @@ return connected;
 */
 String fillPayload()
 {
-  payload = "{\"mac\":";
+  payload = "{\"mac\":\"";
   payload += mac;
-  payload += " :[";
+  payload += "\",";
 
   //início sensor 1
-  payload += "{\"temperature\":";
+  payload += "\"temp1\":";
   payload += dht1.readTemperature(); 
-  payload += ", ";
-  payload += "\"humidity\":";
+  payload += ",";
+  payload += "\"humid1\":";
   payload += dht1.readHumidity();
-  payload += "},";
+  payload += ",";
   //final sensor 1
 
   //início sensor 2
-  payload += "{\"temperature\":";
+  payload += "\"temp2\":";
   payload += dht2.readTemperature(); 
-  payload += ", ";
-  payload += "\"humidity\":";
+  payload += ",";
+  payload += "\"humid2\":";
   payload += dht2.readHumidity();
-  payload += "},";
+  payload += ",";
   //final sensor 2
 
   //início sensor 3
-  payload += "{\"temperature\":";
+  payload += "\"temp3\":";
   payload += dht3.readTemperature(); 
-  payload += ", ";
-  payload += "\"humidity\":";
+  payload += ",";
+  payload += "\"humid3\":";
   payload += dht3.readHumidity();
-  payload += "}"; //Sem "," no final, pois é o último elemento
   //final sensor 3
 
-  payload += "]}";
+  payload += "}";
+
+  Serial.println(payload);
 
   return payload;
 
