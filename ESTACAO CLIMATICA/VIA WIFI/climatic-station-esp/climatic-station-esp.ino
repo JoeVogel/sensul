@@ -6,6 +6,7 @@
 
 #define DHT_PIN 0
 #define DHT22_TYPE DHT22
+#define ANALOG_PIN A0
 
 const char *ssid      = "ESPap";
 const char *passwd    = "1234567890";
@@ -26,6 +27,8 @@ String mac;
 void setup()
 {
     Serial.begin(115200);
+
+    pinMode(ANALOG_PIN, INPUT);
   
   	dht.begin();
 
@@ -43,20 +46,21 @@ void setup()
 
   	client.setServer(mqtt_server, 1883);
 
-  	wifiConnect();
+  	wifiConnect(); //Testar como fica conexão caso a rede caia
 
 }
 
 void loop()
 {
-  	if (mqttConnect())
+  	
+    if (mqttConnect())
   	{
 
   		publish();
 
   	}
 
-    //FreeHEAP();
+    //freeHEAP();
 
   	delay(60000);//1 min
 
@@ -161,7 +165,9 @@ String fillPayload()
   payload += ","; 
   payload += "\"pressure\":";
   payload += bmp.readPressure();
-  //payload += ","; 
+  payload += ","; 
+  payload += "\"uv\":";
+  payload += calculateUVIndex();
   //final sensores
 
   bmp.readPressure()/133
@@ -192,7 +198,7 @@ void publish()
 
 }
 
-void FreeHEAP() {
+void freeHEAP() {
 
   if ( ESP.getFreeHeap() < freeheap ) {
 
@@ -207,6 +213,101 @@ void FreeHEAP() {
 
     freeheap = ESP.getFreeHeap();
 
+  }
+
+}
+
+int calculateUVIndex()
+{
+
+  int valor_sensor = analogRead(ANALOG_PIN);
+  int UV_index;
+  
+  //Calcula tensao em milivolts
+  int tensao = (valor_sensor * (5.0 / 1023.0)) * 1000;
+
+  //Gera índice de UV
+  if (tensao > 0 && tensao < 227)
+  {
+
+    UV_index = "0";
+  
+  }
+  
+  else if (tensao > 227 && tensao <= 318)
+  {
+  
+    UV_index = "1";
+  
+  }
+  
+  else if (tensao > 318 && tensao <= 408)
+  {
+  
+    UV_index = "2";
+  
+  }
+  
+  else if (tensao > 408 && tensao <= 503)
+  {
+  
+    UV_index = "3";
+  
+  }
+  
+  else if (tensao > 503 && tensao <= 606)
+  {
+  
+    UV_index = "4";
+  
+  }
+  
+  else if (tensao > 606 && tensao <= 696)
+  {
+  
+    UV_index = "5";
+  
+  }
+  
+  else if (tensao > 696 && tensao <= 795)
+  {
+  
+    UV_index = "6";
+  
+  }
+  
+  else if (tensao > 795 && tensao <= 881)
+  {
+  
+    UV_index = "7";
+  
+  }
+  
+  else if (tensao > 881 && tensao <= 976)
+  {
+  
+    UV_index = "8";
+  }
+  
+  else if (tensao > 976 && tensao <= 1079)
+  {
+  
+    UV_index = "9";
+  
+  }
+  
+  else if (tensao > 1079 && tensao <= 1170)
+  {
+  
+    UV_index = "10";
+  
+  }
+  
+  else if (tensao > 1170)
+  {
+  
+    UV_index = "11";
+  
   }
 
 }
