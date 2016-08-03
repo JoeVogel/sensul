@@ -157,16 +157,16 @@ String fillPayload()
   payload += "\",";
 
   //início sensores
-  payload += "\"temperature\":";
+  payload += "\"t\":";
   payload += dht1.readTemperature(); 
   payload += ",";
-  payload += "\"humidity\":";
+  payload += "\"h\":";
   payload += dht1.readHumidity();
   payload += ","; 
-  payload += "\"pressure\":";
+  payload += "\"p\":";
   payload += bmp.readPressure();
   payload += ","; 
-  payload += "\"uv\":";
+  payload += "\"u\":";
   payload += calculateUVIndex();
   //final sensores
 
