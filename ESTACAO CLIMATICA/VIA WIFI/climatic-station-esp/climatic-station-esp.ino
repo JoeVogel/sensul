@@ -1,21 +1,20 @@
-#include "Wire.h"
+#include <Wire.h>
 #include "Adafruit_BMP085.h" // https://github.com/4refr0nt/iot-manager-demo/tree/master/ArduinoIDE/ESP8266/users-demo/bmp180/Adafruit-BMP085
 #include "PubSubClient.h"
 #include "DHT.h"
 #include <ESP8266WiFi.h>
 
-#define DHT_PIN 0
-#define DHT22_TYPE DHT22
-#define ANALOG_PIN A0
+//const char *ssid      = "jaraguatec";
+//const char *passwd    = "89vcj13jkd39dsmg3";
 
-const char *ssid      = "ESPap";
-const char *passwd    = "1234567890";
+const char *ssid      = "AndroidAP";
+const char *passwd    = "nuhb7081";
 
-#define mqtt_server ""
+#define mqtt_server "138.68.21.186"
 #define mqtt_user ""
 #define mqtt_password ""
 
-DHT dht(DHT_PIN, DHT22_TYPE);
+DHT dht1(0, DHT22);
 Adafruit_BMP085 bmp;
 
 WiFiClient espClient;
@@ -27,50 +26,46 @@ String mac;
 void setup()
 {
     Serial.begin(115200);
-
-    pinMode(ANALOG_PIN, INPUT);
   
-  	dht.begin();
+    dht1.begin();
 
     Wire.pins(4, 5); //SDA, SCL. Needed because ESP8266 pins aren't the same of Arduino. In ESP-01 is Wire.pins(0, 2)
-  	
+    
     if (!bmp.begin())
     {
 
       Serial.println("COULD NOT FIND A VALID BMP SENSOR, CHECK WIRING!");
 
     } 
-  
-  	//Busca e tratamento do MAC para uso na identificação do payload
-  	mac = WiFi.macAddress();
 
-  	client.setServer(mqtt_server, 1883);
+    //Busca e tratamento do MAC para uso na identificação do payload
+    mac = WiFi.macAddress();
 
-  	wifiConnect(); //Testar como fica conexão caso a rede caia
+    client.setServer(mqtt_server, 1883);
+
+    wifiConnect(); //Testar como fica conexão caso a rede caia
 
 }
 
 void loop()
-{
-  	
-    if (mqttConnect())
-  	{
+{   
 
-  		publish();
+  if (mqttConnect())
+  {
 
-  	}
+    publish();
 
-    //freeHEAP();
+  }
 
-  	delay(60000);//1 min
+  delay(1000);
 
 }
 
 /*
-	void wifiConnect()
+  void wifiConnect()
 
-	Tenta efetuar a conexão na rede WiFi até conseguir. 
-	Quando estiver autenticado, exibe o IP recebido e finaliza a função.
+  Tenta efetuar a conexão na rede WiFi até conseguir. 
+  Quando estiver autenticado, exibe o IP recebido e finaliza a função.
 */
 void wifiConnect()
 {
@@ -99,9 +94,9 @@ void wifiConnect()
 }  
 
 /*
-	void mqttConnect() 
+  void mqttConnect() 
 
-	Realiza a conexão com o broker mqtt, se em 10 tentativas não funcionar, aborta tentativa. (acender um LED???)
+  Realiza a conexão com o broker mqtt, se em 10 tentativas não funcionar, aborta tentativa. (acender um LED???)
 */
 boolean mqttConnect() 
 {
@@ -111,43 +106,43 @@ boolean mqttConnect()
   for (int i = 0; i < 10; i++)
   {
   
-   	if (!client.connected())
-   	{
+    if (!client.connected())
+    {
   
-   		Serial.print("ATTEMPTING MQTT CONNECTION...");
+      Serial.print("ATTEMPTING MQTT CONNECTION...");
 
-   		//if (client.connect(mac.c_str(), mqtt_user, mqtt_password)) {
-   		if (client.connect(mac.c_str()))
-   		{
+      //if (client.connect(mac.c_str(), mqtt_user, mqtt_password)) {
+      if (client.connect(mac.c_str()))
+      {
   
-  	  	Serial.println("CONNECTED.");
-  	  	connected = true;
-  	  	break;
+        Serial.println("CONNECTED.");
+        connected = true;
+        break;
   
-   		}
-   		else 
-   		{
+      }
+      else 
+      {
   
-  	  	Serial.print("FAILED, RC= ");
-  	  	Serial.print(client.state());
-  	  	Serial.println(" TRY AGAIN IN 5 SECONDS.");
-  	  	delay(5000);
+        Serial.print("FAILED, RC= ");
+        Serial.print(client.state());
+        Serial.println(" TRY AGAIN IN 5 SECONDS.");
+        delay(5000);
   
-   		}
+      }
   
-   	}
+    }
   
   }
 
-	return connected;
+  return connected;
 
 }
 
 /*
-	String fillPayload()
+  String fillPayload()
 
-	Função responsável por criar a String JSON por meio de concatenação de strings e valores das leituras
-	para envio posterior
+  Função responsável por criar a String JSON por meio de concatenação de strings e valores das leituras
+  para envio posterior
 */
 String fillPayload()
 {
@@ -164,13 +159,11 @@ String fillPayload()
   payload += dht1.readHumidity();
   payload += ","; 
   payload += "\"p\":";
-  payload += bmp.readPressure();
-  payload += ","; 
-  payload += "\"u\":";
-  payload += calculateUVIndex();
+  payload += bmp.readPressure()/100;
+  //payload += ","; 
+  //payload += "\"u\":";
+  //payload += calculateUVIndex();
   //final sensores
-
-  bmp.readPressure()/133
 
   payload += "}";
 
@@ -183,7 +176,7 @@ String fillPayload()
 void publish()
 {
 
-	if (client.publish("/wheater", fillPayload().c_str(), true))
+  if (client.publish("/sensor", fillPayload().c_str(), true))
   {
 
     Serial.println("SENDED.");
@@ -192,12 +185,12 @@ void publish()
   else
   {
 
-   	Serial.println("NOT SENDED.");
+    Serial.println("NOT SENDED.");
 
   }
 
 }
-
+/*
 void freeHEAP() {
 
   if ( ESP.getFreeHeap() < freeheap ) {
@@ -215,8 +208,8 @@ void freeHEAP() {
 
   }
 
-}
-
+}*/
+/*
 int calculateUVIndex()
 {
 
@@ -230,84 +223,84 @@ int calculateUVIndex()
   if (tensao > 0 && tensao < 227)
   {
 
-    UV_index = "0";
+    UV_index = 0;
   
   }
   
   else if (tensao > 227 && tensao <= 318)
   {
   
-    UV_index = "1";
+    UV_index = 1;
   
   }
   
   else if (tensao > 318 && tensao <= 408)
   {
   
-    UV_index = "2";
+    UV_index = 2;
   
   }
   
   else if (tensao > 408 && tensao <= 503)
   {
   
-    UV_index = "3";
+    UV_index = 3;
   
   }
   
   else if (tensao > 503 && tensao <= 606)
   {
   
-    UV_index = "4";
+    UV_index = 4;
   
   }
   
   else if (tensao > 606 && tensao <= 696)
   {
   
-    UV_index = "5";
+    UV_index = 5;
   
   }
   
   else if (tensao > 696 && tensao <= 795)
   {
   
-    UV_index = "6";
+    UV_index = 6;
   
   }
   
   else if (tensao > 795 && tensao <= 881)
   {
   
-    UV_index = "7";
+    UV_index = 7;
   
   }
   
   else if (tensao > 881 && tensao <= 976)
   {
   
-    UV_index = "8";
+    UV_index = 8;
   }
   
   else if (tensao > 976 && tensao <= 1079)
   {
   
-    UV_index = "9";
+    UV_index = 9;
   
   }
   
   else if (tensao > 1079 && tensao <= 1170)
   {
   
-    UV_index = "10";
+    UV_index = 10;
   
   }
   
   else if (tensao > 1170)
   {
   
-    UV_index = "11";
+    UV_index = 11;
   
   }
 
-}
+}*/
