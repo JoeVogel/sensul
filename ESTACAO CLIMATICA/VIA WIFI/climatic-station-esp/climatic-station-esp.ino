@@ -7,8 +7,8 @@
 //const char *ssid      = "jaraguatec";
 //const char *passwd    = "89vcj13jkd39dsmg3";
 
-const char *ssid      = "AndroidAP";
-const char *passwd    = "nuhb7081";
+const char *ssid      = "SENSUL_AGRICULTURE";
+const char *passwd    = "";
 
 #define mqtt_server "138.68.21.186"
 #define mqtt_user ""
@@ -44,6 +44,8 @@ void setup()
     client.setServer(mqtt_server, 1883);
 
     wifiConnect(); //Testar como fica conexão caso a rede caia
+
+    delay(2000);
 
 }
 
