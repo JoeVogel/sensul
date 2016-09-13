@@ -15,6 +15,7 @@ const char *passwd    = "";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+String payload; 
 String mac;
 int lastMQTTReconnectAttempt;
 int lastReconnectAttempt;
@@ -138,7 +139,7 @@ String fillPayload()
   payload += "\",";
 
   payload += "\"r\":";
-  payload += releState;
+  payload += releStatus;
 
   payload += "}";
 
@@ -195,7 +196,7 @@ void loop()
     		{
       			lastMQTTReconnectAttempt = now;
       			// Attempt to reconnect
-      			if (reconnect()) 
+      			if (mqttReconnect()) 
       			{
         			lastMQTTReconnectAttempt = 0;
       			}
