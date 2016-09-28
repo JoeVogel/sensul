@@ -11,6 +11,7 @@ const char *passwd    = "";
 #define MQTT_USER ""
 #define MQTT_PASSWORD ""
 #define RELE_PORT 4
+#define RELE1_PORT 5
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -23,34 +24,41 @@ int releStatus;
 
 void callback(char* topic, byte* payload, unsigned int length) 
 {
-	String data = "";
-  
+  String data = "";
+  String data1 = "";
+
 	Serial.print("MESSAGE ARRIVED [");
-  	Serial.print(topic);
-  	Serial.print("] ");
+  Serial.print(topic);
+  Serial.print("] ");
   	
-  	for (int i=0;i<length;i++) 
-  	{
-    	data += payload[i];
-  	}
+  for (int i=0;i<length;i++) 
+  {
+   	data += payload[i];
+  }
 
-  	Serial.print(data);
+  //Serial.println(data);
 
-	Serial.println();
+  data1 = data.substring(0, 17);
 
-	if (data.equals("1") || data.equals("0"))
-	{
+  if (data1.equals(mac))
+  {
+    data1 = data.substring(18);  
 
-		releStatus = data.toInt();
-		digitalWrite(RELE_PORT, releStatus);
+    if (data1.equals("1") || data1.equals("0"))
+    {
 
+      releStatus = data.toInt();
+      digitalWrite(RELE_PORT, releStatus);
+      digitalWrite(RELE1_PORT, releStatus);
+    
+    } else {
 
-	} else {
+      Serial.print("RECEIVED AN INVALID MESSAGE: ");
+      Serial.println(data);
 
-		Serial.print("RECEIVED AN INVALID MESSAGE: ");
-		Serial.println(data);
+    }
 
-	}
+	} 
 
 }
 
@@ -110,7 +118,7 @@ boolean mqttReconnect()
 {
 	if (client.connect(mac.c_str())) {
     	// Once connected, publish an announcement...
-    	client.publish("controlsStatus", fillPayload().c_str());
+    	//client.publish("controlsStatus", fillPayload().c_str());
     	// ... and resubscribe
     	client.subscribe("controls");
   	}
